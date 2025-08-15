@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪞 Mirror Realm - O Jogo dos Espelhos Mágicos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .mirror-shard {
+            position: absolute;
+            width: 2px;
+            height: 60px;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: float 8s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+        }
+
+      
+        .game-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .game-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .game-arena {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 600px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            overflow: hidden;
+            box-shadow: 
+                0 0 50px rgba(255,255,255,0.1),
+                inset 0 0 50px rgba(255,255,255,0.05);
+        }
+
+        .mirror-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: mirrorPulse 2s ease-in-out infinite;
+        }
+
+        .mirror-line.horizontal {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            left: 0;
+        }
+
+        .mirror-line.vertical {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+        }
+
+        @keyframes mirrorPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        .player {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #ff6b6b, #ff8e8e);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px #ff6b6b,
+                0 0 40px #ff6b6b,
+                0 0 60px rgba(255,107,107,0.5);
+            transition: all 0.1s ease;
+            z-index: 5;
+        }
+      
+        .player-reflection {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #4ecdc4, #6ee0d6);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px #4ecdc4,
+                0 0 40px #4ecdc4,
+                0 0 60px rgba(78,205,196,0.5);
+            transition: all 0.1s ease;
+            z-index: 4;
+            opacity: 0.8;
+        }
+
+        .crystal {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px #ffd700,
+                0 0 30px rgba(255,215,0,0.5);
+            animation: crystalFloat 2s ease-in-out infinite;
+            z-index: 3;
+        }
+
+        @keyframes crystalFloat {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(180deg); }
+        }
+      
+        .obstacle {
+            position: absolute;
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            border-radius: 8px;
+            box-shadow: 
+                0 0 15px #8e44ad,
+                0 0 30px rgba(142,68,173,0.5);
+            z-index: 3;
+        }
+
+        .collect-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: collectParticle 0.8s ease-out forwards;
+        }
+
+        @keyframes collectParticle {
+            0% { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(0) translateY(-50px); 
+            }
+        }
+
+        .explosion {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,107,107,0.8), transparent);
+            animation: explode 0.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 6;
+        }
+
+        @keyframes explode {
+            0% { 
+                transform: scale(0); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: scale(3); 
+                opacity: 0; 
+            }
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        .control-keys {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .key {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            backdrop-filter: blur(5px);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+
+        .game-over-content {
+            text-align: center;
+            color: white;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(15px);
+        }
+
+        .game-over-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            color: white;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(78,205,196,0.3);
+        }
+
+       
+        .level-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            opacity: 0;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .level-indicator.show {
+            animation: levelShow 2s ease-in-out;
+        }
+
+        @keyframes levelShow {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+
+        @media (max-width: 900px) {
+            .game-arena {
+                width: 90vw;
+                height: 70vh;
+            }
+            .game-title {
+                font-size: 2rem;
+            }
+            .game-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        .phase-1 { filter: hue-rotate(0deg); }
+        .phase-2 { filter: hue-rotate(60deg); }
+        .phase-3 { filter: hue-rotate(120deg); }
+        .phase-4 { filter: hue-rotate(180deg); }
+        .phase-5 { filter: hue-rotate(240deg); }
+        .phase-6 { filter: hue-rotate(300deg); }
+    </style>
+</head>
+<body>
+    
+    <div class="background-effects" id="backgroundEffects"></div>
+
+    <div class="game-container">
+       
+        <div class="game-header">
+            <h1 class="game-title">🪞 MIRROR REALM</h1>
+            <div class="game-stats">
+                <div class="stat-item">
+                    <div>FASE</div>
+                    <div id="levelDisplay">1</div>
+                </div>
+                <div class="stat-item">
+                    <div>CRISTAIS</div>
+                    <div id="scoreDisplay">0</div>
+                </div>
+                <div class="stat-item">
+                    <div>VIDAS</div>
+                    <div id="livesDisplay">3</div>
+                </div>
+            </div>
+        </div>
+
+       
+        <div class="game-arena" id="gameArena">
+          
+            
+            
+            <div class="player" id="player"></div>
+            
+          
+        </div>
+
+        <div class="controls">
+            <div>Use as setas ou WASD para mover • Colete cristais • Evite obstáculos</div>
+            <div class="control-keys">
+                <div class="key">W</div>
+                <div class="key">A</div>
+                <div class="key">S</div>
+                <div class="key">D</div>
+            </div>
+        </div>
+
+        <div class="level-indicator" id="levelIndicator">FASE 1</div>
+
+        <div class="game-over" id="gameOver">
+            <div class="game-over-content">
+                <div class="game-over-title">ESPELHOS QUEBRADOS!</div>
+                <div id="finalScore">Cristais coletados: 0</div>
+                <div id="finalLevel">Fase alcançada: 1</div>
+                <button class="restart-btn" onclick="restartGame()">🔄 JOGAR NOVAMENTE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            level: 1,
+            score: 0,
+            lives: 3,
+            isPlaying: true,
+            player: { x: 100, y: 100 },
+            reflections: [],
+            crystals: [],
+            obstacles: [],
+            mirrorConfig: { horizontal: false, vertical: false, diagonal: false },
+            speed: 3
+        };
+
+        const levelConfigs = {
+            1: { 
+                mirrors: { horizontal: false, vertical: false }, 
+                crystals: 5, 
+                obstacles: 2,
+                description: "Movimento Normal"
+            },
+            2: { 
+                mirrors: { horizontal: true, vertical: false }, 
+                crystals: 6, 
+                obstacles: 3,
+                description: "Espelho Horizontal"
+            },
+            3: { 
+                mirrors: { horizontal: false, vertical: true }, 
+                crystals: 7, 
+                obstacles: 4,
+                description: "Espelho Vertical"
+            },
+            4: { 
+                mirrors: { horizontal: true, vertical: true }, 
+                crystals: 8, 
+                obstacles: 5,
+                description: "Espelhos Cruzados"
+            },
+            5: { 
+                mirrors: { horizontal: true, vertical: true, diagonal: true }, 
+                crystals: 10, 
+                obstacles: 6,
+                description: "Espelhos Múltiplos"
+            },
+            6: { 
+                mirrors: { horizontal: true, vertical: true, diagonal: true, rotating: true }, 
+                crystals: 12, 
+                obstacles: 8,
+                description: "Espelhos Rotativos"
+            }
+        };
+
+        const gameArena = document.getElementById('gameArena');
+        const player = document.getElementById('player');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const levelIndicator = document.getElementById('levelIndicator');
+        const gameOver = document.getElementById('gameOver');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            createBackgroundEffects();
+            initializeLevel();
+            setupControls();
+            gameLoop();
+        });
+      
+        function createBackgroundEffects() {
+            const container = document.getElementById('backgroundEffects');
+            
+            for (let i = 0; i < 20; i++) {
+                const shard = document.createElement('div');
+                shard.className = 'mirror-shard';
+                shard.style.left = Math.random() * 100 + '%';
+                shard.style.top = Math.random() * 100 + '%';
+                shard.style.animationDelay = Math.random() * 8 + 's';
+                shard.style.animationDuration = (8 + Math.random() * 4) + 's';
+                container.appendChild(shard);
+            }
+        }
+
+        function initializeLevel() {
+            const config = levelConfigs[gameState.level] || levelConfigs[6];
+            
+            clearArena();
+          
+            showLevelIndicator();
+            
+            setupMirrors(config.mirrors);
+            
+            gameState.player = { x: 100, y: 100 };
+            updatePlayerPosition();
+            
+            createCrystals(config.crystals);
+            
+            createObstacles(config.obstacles);
+            
+           
+            updateDisplay();
+           
+            document.body.className = `phase-${Math.min(gameState.level, 6)}`;
+        }
+      
+        function clearArena() {
+            const elements = gameArena.querySelectorAll('.crystal, .obstacle, .mirror-line, .player-reflection, .collect-particle, .explosion');
+            elements.forEach(el => el.remove());
+            gameState.crystals = [];
+            gameState.obstacles = [];
+            gameState.reflections = [];
+        }
+
+        function showLevelIndicator() {
+            const config = levelConfigs[gameState.level] || levelConfigs[6];
+            levelIndicator.innerHTML = `FASE ${gameState.level}<br><small style="font-size:0.5em;">${config.description}</small>`;
+            levelIndicator.classList.add('show');
+            
+            setTimeout(() => {
+                levelIndicator.classList.remove('show');
+            }, 2000);
+        }
+
+        function setupMirrors(mirrors) {
+            gameState.mirrorConfig = mirrors;
+            
+            if (mirrors.horizontal) {
+                const line = document.createElement('div');
+                line.className = 'mirror-line horizontal';
+                gameArena.appendChild(line);
+            }
+            
+            if (mirrors.vertical) {
+                const line = document.createElement('div');
+                line.className = 'mirror-line vertical';
+                gameArena.appendChild(line);
+            }
+
+            createReflections();
+        }
+
+        function createReflections() {
+            gameState.reflections = [];
+            
+            if (gameState.mirrorConfig.horizontal) {
+                const reflection = document.createElement('div');
+                reflection.className = 'player-reflection';
+                gameArena.appendChild(reflection);
+                gameState.reflections.push({ element: reflection, type: 'horizontal' });
+            }
+            
+            if (gameState.mirrorConfig.vertical) {
+                const reflection = document.createElement('div');
+                reflection.className = 'player-reflection';
+                gameArena.appendChild(reflection);
+                gameState.reflections.push({ element: reflection, type: 'vertical' });
+            }
+            
+            if (gameState.mirrorConfig.horizontal && gameState.mirrorConfig.vertical) {
+                const reflection = document.createElement('div');
+                reflection.className = 'player-reflection';
+                gameArena.appendChild(reflection);
+                gameState.reflections.push({ element: reflection, type: 'both' });
+            }
+        }
+
+        function createCrystals(count) {
+            for (let i = 0; i < count; i++) {
+                const crystal = document.createElement('div');
+                crystal.className = 'crystal';
+                
+                let x, y;
+                do {
+                    x = Math.random() * (gameArena.offsetWidth - 20) + 10;
+                    y = Math.random() * (gameArena.offsetHeight - 20) + 10;
+                } while (isPositionOccupied(x, y, 50));
+                
+                crystal.style.left = x + 'px';
+                crystal.style.top = y + 'px';
+                
+                gameArena.appendChild(crystal);
+                gameState.crystals.push({ element: crystal, x: x, y: y, collected: false });
+            }
+        }
+
+        function createObstacles(count) {
+            for (let i = 0; i < count; i++) {
+                const obstacle = document.createElement('div');
+                obstacle.className = 'obstacle';
+                
+                const width = 30 + Math.random() * 40;
+                const height = 30 + Math.random() * 40;
+                
+                let x, y;
+                do {
+                    x = Math.random() * (gameArena.offsetWidth - width);
+                    y = Math.random() * (gameArena.offsetHeight - height);
+                } while (isPositionOccupied(x, y, 80));
+                
+                obstacle.style.left = x + 'px';
+                obstacle.style.top = y + 'px';
+                obstacle.style.width = width + 'px';
+                obstacle.style.height = height + 'px';
+                
+                gameArena.appendChild(obstacle);
+                gameState.obstacles.push({ element: obstacle, x: x, y: y, width: width, height: height });
+            }
+        }
+
+        function isPositionOccupied(x, y, minDistance) {
+            const playerDistance = Math.sqrt(Math.pow(x - gameState.player.x, 2) + Math.pow(y - gameState.player.y, 2));
+            if (playerDistance < minDistance) return true;
+            
+            for (let crystal of gameState.crystals) {
+                const distance = Math.sqrt(Math.pow(x - crystal.x, 2) + Math.pow(y - crystal.y, 2));
+                if (distance < minDistance) return true;
+            }
+            
+            for (let obstacle of gameState.obstacles) {
+                const distance = Math.sqrt(Math.pow(x - obstacle.x, 2) + Math.pow(y - obstacle.y, 2));
+                if (distance < minDistance) return true;
+            }
+            
+            return false;
+        }
+
+        function setupControls() {
+            const keys = {};
+            
+            document.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false;
+                e.preventDefault();
+            });
+
+            setInterval(() => {
+                if (!gameState.isPlaying) return;
+                
+                let dx = 0, dy = 0;
+                
+                if (keys['w'] || keys['arrowup']) dy = -gameState.speed;
+                if (keys['s'] || keys['arrowdown']) dy = gameState.speed;
+                if (keys['a'] || keys['arrowleft']) dx = -gameState.speed;
+                if (keys['d'] || keys['arrowright']) dx = gameState.speed;
+                
+                if (dx !== 0 || dy !== 0) {
+                    movePlayer(dx, dy);
+                }
+            }, 16);
+        }
+
+        function movePlayer(dx, dy) {
+            const newX = Math.max(0, Math.min(gameArena.offsetWidth - 20, gameState.player.x + dx));
+            const newY = Math.max(0, Math.min(gameArena.offsetHeight - 20, gameState.player.y + dy));
+            
+
+            if (!checkObstacleCollision(newX, newY, 20, 20)) {
+                gameState.player.x = newX;
+                gameState.player.y = newY;
+                updatePlayerPosition();
+                checkCollisions();
+            }
+        }
+      
+        function updatePlayerPosition() {
+            player.style.left = gameState.player.x + 'px';
+            player.style.top = gameState.player.y + 'px';
+            
+            gameState.reflections.forEach(reflection => {
+                let reflectionX = gameState.player.x;
+                let reflectionY = gameState.player.y;
+                
+                switch (reflection.type) {
+                    case 'horizontal':
+                        reflectionY = gameArena.offsetHeight - gameState.player.y - 20;
+                        break;
+                    case 'vertical':
+                        reflectionX = gameArena.offsetWidth - gameState.player.x - 20;
+                        break;
+                    case 'both':
+                        reflectionX = gameArena.offsetWidth - gameState.player.x - 20;
+                        reflectionY = gameArena.offsetHeight - gameState.player.y - 20;
+                        break;
+                }
+                
+                reflection.element.style.left = reflectionX + 'px';
+                reflection.element.style.top = reflectionY + 'px';
+            });
+        }
+
+        function checkObstacleCollision(x, y, width, height) {
+            for (let obstacle of gameState.obstacles) {
+                if (x < obstacle.x + obstacle.width &&
+                    x + width > obstacle.x &&
+                    y < obstacle.y + obstacle.height &&
+                    y + height > obstacle.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkCollisions() {
+           
+            gameState.crystals.forEach((crystal, index) => {
+                if (!crystal.collected) {
+                    const distance = Math.sqrt(
+                        Math.pow(gameState.player.x - crystal.x, 2) + 
+                        Math.pow(gameState.player.y - crystal.y, 2)
+                    );
+                    
+                    if (distance < 25) {
+                        collectCrystal(crystal, index);
+                    }
+                    
+                    gameState.reflections.forEach(reflection => {
+                        const rect = reflection.element.getBoundingClientRect();
+                        const arenaRect = gameArena.getBoundingClientRect();
+                        const reflectionX = rect.left - arenaRect.left;
+                        const reflectionY = rect.top - arenaRect.top;
+                        
+                        const reflectionDistance = Math.sqrt(
+                            Math.pow(reflectionX - crystal.x, 2) + 
+                            Math.pow(reflectionY - crystal.y, 2)
+                        );
+                        
+                        if (reflectionDistance < 25) {
+                            collectCrystal(crystal, index);
+                        }
+                    });
+                }
+            });
+            
+            gameState.reflections.forEach(reflection => {
+                const rect = reflection.element.getBoundingClientRect();
+                const arenaRect = gameArena.getBoundingClientRect();
+                const reflectionX = rect.left - arenaRect.left;
+                const reflectionY = rect.top - arenaRect.top;
+                
+                if (checkObstacleCollision(reflectionX, reflectionY, 20, 20)) {
+                    hitObstacle(reflectionX, reflectionY);
+                }
+            });
+        }
+
+        function collectCrystal(crystal, index) {
+            if (crystal.collected) return;
+            
+            crystal.collected = true;
+            crystal.element.style.display = 'none';
+            
+            gameState.score++;
+            updateDisplay();
+            
+            createCollectParticles(crystal.x, crystal.y);
+            
+            const remainingCrystals = gameState.crystals.filter(c => !c.collected);
+            if (remainingCrystals.length === 0) {
+                nextLevel();
+            }
+        }
+
+        function createCollectParticles(x, y) {
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'collect-particle';
+                particle.style.left = (x + Math.random() * 20 - 10) + 'px';
+                particle.style.top = (y + Math.random() * 20 - 10) + 'px';
+                gameArena.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 800);
+            }
+        }
+
+        function hitObstacle(x, y) {
+            gameState.lives--;
+            updateDisplay();
+            
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = (x - 30) + 'px';
+            explosion.style.top = (y - 30) + 'px';
+            gameArena.appendChild(explosion);
+            
+            setTimeout(() => explosion.remove(), 500);
+            
+            if (gameState.lives <= 0) {
+                endGame();
+            } else {
+                gameState.player = { x: 100, y: 100 };
+                updatePlayerPosition();
+            }
+        }
+
+        function nextLevel() {
+            gameState.level++;
+            gameState.speed += 0.5;
+            
+            setTimeout(() => {
+                initializeLevel();
+            }, 1000);
+        }
+
+        function endGame() {
+            gameState.isPlaying = false;
+            
+            document.getElementById('finalScore').textContent = `Cristais coletados: ${gameState.score}`;
+            document.getElementById('finalLevel').textContent = `Fase alcançada: ${gameState.level}`;
+            
+            gameOver.style.display = 'flex';
+        }
+
+        function restartGame() {
+            gameState = {
+                level: 1,
+                score: 0,
+                lives: 3,
+                isPlaying: true,
+                player: { x: 100, y: 100 },
+                reflections: [],
+                crystals: [],
+                obstacles: [],
+                mirrorConfig: { horizontal: false, vertical: false, diagonal: false },
+                speed: 3
+            };
+            
+            gameOver.style.display = 'none';
+            document.body.className = 'phase-1';
+            initializeLevel();
+        }
+
+        function updateDisplay() {
+            levelDisplay.textContent = gameState.level;
+            scoreDisplay.textContent = gameState.score;
+            livesDisplay.textContent = gameState.lives;
+        }
+
+      
+        function gameLoop() {
+            if (gameState.isPlaying) {
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
